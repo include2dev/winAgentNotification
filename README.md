@@ -67,6 +67,12 @@ dotnet build            # full solution (on Linux needs EnableWindowsTargeting, 
 dotnet test             # Core unit tests, run anywhere
 ```
 
+On Linux, building the full solution also requires a Microsoft-built .NET SDK
+(e.g. installed via the `dotnet-install` script or the `packages.microsoft.com`
+apt feed). Distro source-built SDKs — such as Ubuntu's `dotnet-sdk-8.0`
+package — lack `Sdks/Microsoft.NET.Sdk.WindowsDesktop` and fail with MSB4019
+on the App project's WindowsDesktop-targeted build.
+
 Publish a self-contained exe (on Windows):
 
 ```powershell
