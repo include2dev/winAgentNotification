@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 using WinAgentNotification.Core;
 
@@ -46,7 +47,11 @@ internal static class Program
 
             host.Start();
 
-            using var trayContext = new TrayApplicationContext(Application.Exit);
+            var monitor = host.Services.GetRequiredService<ConnectionStateMonitor>();
+            var natsSettings = host.Services.GetRequiredService<IOptions<NatsSettings>>().Value;
+
+            using var trayContext = new TrayApplicationContext(
+                monitor, natsSettings.Url, Application.Exit);
             Application.Run(trayContext);
 
             host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
