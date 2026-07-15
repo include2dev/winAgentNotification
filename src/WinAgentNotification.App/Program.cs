@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using WinAgentNotification.Core;
 
 namespace WinAgentNotification.App;
 
@@ -62,6 +63,10 @@ internal static class Program
 
     private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<NatsSettings>(configuration.GetSection("Nats"));
+        services.AddSingleton<ConnectionStateMonitor>();
+        services.AddSingleton<INatsCredentialsProvider, AnonymousCredentialsProvider>();
         services.AddSingleton<IToastNotifier, ToastNotifier>();
+        services.AddHostedService<NatsSubscriberService>();
     }
 }
