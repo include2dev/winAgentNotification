@@ -19,21 +19,35 @@ internal static class Program
 
         ApplicationConfiguration.Initialize();
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-            .Build();
+        IConfiguration configuration;
+        try
+        {
+            configuration = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .Build();
 
-        var logDirectory = Environment.ExpandEnvironmentVariables(
-            configuration["Logging:Directory"] ?? @"%LOCALAPPDATA%\WinAgentNotification\logs");
+            var logDirectory = Environment.ExpandEnvironmentVariables(
+                configuration["Logging:Directory"] ?? @"%LOCALAPPDATA%\WinAgentNotification\logs");
 
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
-            .WriteTo.File(
-                Path.Combine(logDirectory, "agent-.log"),
-                rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 7)
-            .CreateLogger();
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.File(
+                    Path.Combine(logDirectory, "agent-.log"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7)
+                .CreateLogger();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"WinAgentNotification failed to start: {ex.Message}",
+                "WinAgentNotification",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            Environment.ExitCode = 1;
+            return;
+        }
 
         try
         {
