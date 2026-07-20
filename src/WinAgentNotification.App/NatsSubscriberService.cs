@@ -74,6 +74,7 @@ public sealed class NatsSubscriberService : BackgroundService
                 Token = credentials.Token,
                 Username = credentials.Username,
                 Password = credentials.Password,
+                CredsFile = credentials.CredsFile,
             };
 
         var opts = NatsOpts.Default with

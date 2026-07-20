@@ -25,6 +25,7 @@ internal static class Program
             configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .AddEnvironmentVariables()
                 .Build();
 
             var logDirectory = Environment.ExpandEnvironmentVariables(
@@ -84,7 +85,7 @@ internal static class Program
     {
         services.Configure<NatsSettings>(configuration.GetSection("Nats"));
         services.AddSingleton<ConnectionStateMonitor>();
-        services.AddSingleton<INatsCredentialsProvider, AnonymousCredentialsProvider>();
+        services.AddSingleton<INatsCredentialsProvider, ConfigurationCredentialsProvider>();
         services.AddSingleton<IToastNotifier, ToastNotifier>();
         services.AddHostedService<NatsSubscriberService>();
     }

@@ -57,8 +57,36 @@ Toast styles: `info` standard; `warning` title prefixed with `⚠`;
 ```
 
 `{hostname}` / `{username}` are expanded at startup. Logs roll daily,
-7 days retained. The POC connects anonymously; a credentials-provider seam
-(`INatsCredentialsProvider`) is in place for a future token-exchange flow.
+7 days retained.
+
+### Authentication
+
+Without an `Auth` section the agent connects anonymously. To use a
+dedicated credential (interim setup for the dev NATS environment until the
+user-token-exchange flow lands), add `Nats.Auth` with exactly one
+mechanism — a NATS `.creds` file path, a token, or username/password:
+
+```json
+{
+  "Nats": {
+    "Url": "nats://nats.dev.example:4222",
+    "Auth": { "CredsFile": "%LOCALAPPDATA%\\WinAgentNotification\\agent.creds" }
+  }
+}
+```
+
+Values can also come from environment variables instead of the file, e.g.
+`Nats__Auth__Token` (double underscore separators), which keeps secrets out
+of `appsettings.json`. Environment variables in the `CredsFile` path are
+expanded at startup.
+
+Security notes for the interim credential:
+- Do not commit the `.creds` file or tokens to source control.
+- Restrict the file's ACL to the account running the agent.
+- The credential is read on every (re)connect via
+  `INatsCredentialsProvider`, so replacing this config-based provider with
+  the future token-exchange implementation requires no connection-code
+  changes.
 
 ## Build
 
