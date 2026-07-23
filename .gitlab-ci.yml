@@ -1,0 +1,68 @@
+# GitLab CI for WinAgentNotification.
+#
+# ADAPT BEFORE USE on the company GitLab:
+#   1. Re-enable the company base-template include below with the real path.
+#   2. If that template defines `workflow: rules`, ensure tag pipelines (v*)
+#      are allowed, or the package/release jobs will never run.
+#   3. `stages:` here REPLACES the template's list — merge the template's
+#      stage names into it. Check Pipeline Editor -> "Full configuration"
+#      for the merged result.
+#   4. Point `image:` at the internal registry. For build-msi, prefer the
+#      pre-baked builder image (build/Dockerfile); the inline apt-get in
+#      before_script is only a fallback while that image does not exist yet.
+#
+# include:
+#   - project: 'platform/ci-templates'
+#     file: 'image-pipeline.yml'
+
+stages:
+  - test
+  - package
+  - release
+
+dotnet-test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+  script:
+    - dotnet test -c Release
+
+build-msi:
+  stage: package
+  # Replace with the pre-baked builder image once published, e.g.:
+  #   image: $CI_REGISTRY/build-images/dotnet-msi:10.0-wixl
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+  before_script:
+    # Not needed when using the pre-baked builder image.
+    - apt-get update && apt-get install -y --no-install-recommends msitools wixl
+  script:
+    - VER=${CI_COMMIT_TAG#v}
+    - bash build/build-msi.sh "$VER"
+    # Publish to the Generic Package Registry so IT has a stable URL.
+    - >
+      curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN"
+      --upload-file "dist/WinAgentNotification-$VER.msi"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/winagentnotification/$CI_COMMIT_TAG/WinAgentNotification-$CI_COMMIT_TAG.msi"
+  artifacts:
+    paths:
+      - dist/*.msi
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+  script:
+    - echo "Releasing $CI_COMMIT_TAG"
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    description: 'WinAgentNotification $CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'MSI installer'
+          url: '$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/winagentnotification/$CI_COMMIT_TAG/WinAgentNotification-$CI_COMMIT_TAG.msi'

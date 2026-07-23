@@ -6,16 +6,9 @@
   validation fails; the toolset declares non-Windows behavior undefined),
   which is why this project uses wixl.
 
-  Build (see build/build-msi.sh for the full pipeline):
-    1. dotnet publish src/WinAgentNotification.App -c Release -r win-x64 \
-         - -self-contained true -o publish
-    2. (cd publish && find . -type f) | wixl-heat -p ./ \
-         - -component-group CG.App - -directory-ref INSTALLFOLDER \
-         - -var var.PublishDir - -win64 > harvest.wxs
-    3. wixl -a x64 -D ProductVersion=1.0.0 -D PublishDir=publish \
-         installer/Product.wxs harvest.wxs -o WinAgentNotification-1.0.0.msi
-  (dashes in the comment above are split to keep XML comments valid;
-   the real commands live in build/build-msi.sh)
+  Build: run `build/build-msi.sh VERSION` — it publishes the app, harvests
+  the publish folder with wixl-heat into a CG.App fragment, and links both
+  sources with `wixl -a x64`.
 
   Variables:
     ProductVersion  numeric x.y.z (MSI requirement; derive from the git tag)

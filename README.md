@@ -109,6 +109,38 @@ Publish a self-contained exe (on Windows):
 dotnet publish src/WinAgentNotification.App -c Release -r win-x64 --self-contained
 ```
 
+## Packaging (MSI)
+
+The MSI builds natively on Linux with msitools (`apt-get install msitools
+wixl`) — no Windows machine needed:
+
+```bash
+build/build-msi.sh 1.0.0        # -> dist/WinAgentNotification-1.0.0.msi
+```
+
+Authoring lives in `installer/Product.wxs` (WiX v3 subset for `wixl`;
+WiX itself cannot build MSIs on non-Windows). `build/Dockerfile` defines a
+pre-baked builder image for CI, and `.gitlab-ci.yml` wires the pipeline:
+test → build MSI on `v*` tags → upload to the package registry → release.
+
+The MSI installs to `Program Files\WinAgentNotification`, writes an
+HKLM Run key (agent starts at every user's next logon), and a newer
+version replaces the old one (`MajorUpgrade`; downgrades are blocked).
+
+Install / upgrade / remove for testing (elevated PowerShell):
+
+```powershell
+msiexec /i WinAgentNotification-1.0.0.msi /qn /l*v install.log
+msiexec /x WinAgentNotification-1.0.0.msi /qn
+```
+
+Known POC limitations: the package has no close-running-app or
+launch-after-install actions (wixl has no WiX util extension), so after an
+upgrade or fresh install the agent starts at the next logon; and the MSI
+is unsigned (SmartScreen warns on manual double-click — install via
+`msiexec` or push via Intune/GPO, and add osslsigncode signing to CI when
+a code-signing certificate is available).
+
 ## Run / auto-start (POC)
 
 Run `WinAgentNotification.exe` directly, or put a shortcut into
